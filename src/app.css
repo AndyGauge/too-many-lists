@@ -1,0 +1,91 @@
+:root {
+  --bg: #ece8df;
+  --ink: #14110d;
+  --muted: rgba(20, 17, 13, 0.56);
+  --rule: rgba(20, 17, 13, 0.16);
+  --accent: #6a6a6a;
+  --serif: 'Fraunces', 'Times New Roman', serif;
+  --sans: 'Inter', system-ui, sans-serif;
+}
+
+/* Track-driven page palette — track tint at ~30% over the neutral default,
+ * so the page reads as a quiet wash, not a saturated swatch. Accents stay
+ * full strength because they only paint borders / small surfaces. */
+html[data-track='systems']  { --bg: color-mix(in oklab, #efe8d6 30%, #ece8df); --accent: #8a6a3a; }
+html[data-track='dynamic']  { --bg: color-mix(in oklab, #e3ebf3 30%, #ece8df); --accent: #3a6a9a; }
+html[data-track='beginner'] { --bg: color-mix(in oklab, #e6efe5 30%, #ece8df); --accent: #4a7a4a; }
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-feature-settings: 'ss01', 'ss02', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 520ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 520ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  font-size: clamp(16px, 1.1vw, 20px);
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* View Transitions */
+@keyframes fade-in   { from { opacity: 0; } }
+@keyframes fade-out  { to   { opacity: 0; } }
+@keyframes slide-in          { from { transform: translateX(3vw);  opacity: 0; } }
+@keyframes slide-out         { to   { transform: translateX(-3vw); opacity: 0; } }
+@keyframes slide-in-reverse  { from { transform: translateX(-3vw); opacity: 0; } }
+@keyframes slide-out-reverse { to   { transform: translateX(3vw);  opacity: 0; } }
+
+::view-transition-old(root) {
+  animation: 320ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out,
+             520ms cubic-bezier(0.7, 0, 0.3, 1) both slide-out;
+}
+::view-transition-new(root) {
+  animation: 520ms cubic-bezier(0.4, 0, 0.2, 1) 80ms both fade-in,
+             620ms cubic-bezier(0.2, 0.9, 0.3, 1) 80ms both slide-in;
+}
+
+html[data-direction='back']::view-transition-old(root) {
+  animation: 320ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out,
+             520ms cubic-bezier(0.7, 0, 0.3, 1) both slide-out-reverse;
+}
+html[data-direction='back']::view-transition-new(root) {
+  animation: 520ms cubic-bezier(0.4, 0, 0.2, 1) 80ms both fade-in,
+             620ms cubic-bezier(0.2, 0.9, 0.3, 1) 80ms both slide-in-reverse;
+}
+
+.vt-title { view-transition-name: book-title; }
+.vt-partlabel { view-transition-name: part-label; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.001ms !important;
+  }
+}

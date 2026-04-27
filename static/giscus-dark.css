@@ -1,0 +1,20 @@
+/* Dark-theme Giscus — matches the book's dark palette. */
+main { color: #f4efe3; }
+
+.gsc-comments {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #f4efe3;
+}
+
+.gsc-header {
+  border-bottom: 1px solid rgba(244, 239, 227, 0.24);
+  padding-bottom: 0.6rem;
+  margin-bottom: 1.2rem;
+}
+
+.gsc-main { color: inherit; }
+
+.gsc-reply-box { background: rgba(244, 239, 227, 0.06); }
+
+a { color: #c49ad8; }
+a:hover { color: #f4efe3; }

@@ -1,0 +1,20 @@
+/* Light-theme Giscus — matches the book's light palette. */
+main { color: #14110d; }
+
+.gsc-comments {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #14110d;
+}
+
+.gsc-header {
+  border-bottom: 1px solid rgba(20, 17, 13, 0.16);
+  padding-bottom: 0.6rem;
+  margin-bottom: 1.2rem;
+}
+
+.gsc-main { color: inherit; }
+
+.gsc-reply-box { background: rgba(20, 17, 13, 0.03); }
+
+a { color: #6a6a6a; }
+a:hover { color: #14110d; }
