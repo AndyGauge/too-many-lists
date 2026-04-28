@@ -18,6 +18,7 @@
   let resolvedGesture = $derived(pickTrack(section.gesture, activeTrack));
   let resolvedBody = $derived(pickTrack(section.body, activeTrack));
   let resolvedTldr = $derived(pickTrack(section.tldr, activeTrack));
+  let chapterHasPerspectives = $derived(chapter?.sections.some((s) => s.perspectives));
   let nextSection = $derived(next(section.num));
   let prevSection = $derived(prev(section.num));
   let chapter = $derived(chapterOf(section.num));
@@ -122,12 +123,6 @@
         {/each}
       </div>
       <a href="{base}/contents">Contents</a>
-      {#if data.qrSvg}
-        <a class="qr" href={data.qrTarget} target="_blank" rel="noopener noreferrer" title="Scan or click to open the source: {data.qrTarget}">
-          {@html data.qrSvg}
-          <span class="qr-label">Source</span>
-        </a>
-      {/if}
     </nav>
   </header>
 
@@ -177,7 +172,7 @@
   {/if}
 
   <div class="body" bind:this={bodyEl}>
-    {#if firstOfChapter && chapter?.intro}
+    {#if firstOfChapter && chapter?.intro && !chapterHasPerspectives}
       <aside class="ch-intro">
         <div class="ch-intro-label">Chapter {romanize(chapter.num)}</div>
         <h2 class="ch-intro-title">{chapter.title}</h2>
@@ -259,6 +254,39 @@
     {:else}
       <aside class="tldr tldr-missing" aria-hidden="true">
         <div class="tldr-label">TL;DR — to be written</div>
+      </aside>
+    {/if}
+
+    {#if lastOfChapter && section.perspectives}
+      <aside class="perspectives" aria-label="Chapter perspectives">
+        <div class="perspectives-head">
+          <div class="perspectives-kicker">End of Chapter {chapter ? romanize(chapter.num) : ''}</div>
+          <h2 class="perspectives-title">Three perspectives on what you just read</h2>
+        </div>
+        {#each TRACKS as t (t)}
+          {#if section.perspectives[t]}
+            <article class="perspective" class:current={activeTrack === t}>
+              <header class="perspective-head">
+                <span class="perspective-tag">{TRACK_LABEL[t]}</span>
+                <span class="perspective-full">{TRACK_FULL[t]}</span>
+              </header>
+              <div class="perspective-body">{@html md(section.perspectives[t], mdOpts)}</div>
+            </article>
+          {/if}
+        {/each}
+      </aside>
+    {/if}
+
+    {#if data.qrSvg}
+      <aside class="page-qr">
+        <a class="page-qr-link" href={data.qrTarget} target="_blank" rel="noopener noreferrer" title={data.qrTarget}>
+          <span class="page-qr-svg">{@html data.qrSvg}</span>
+          <span class="page-qr-meta">
+            <span class="page-qr-label">Source</span>
+            <span class="page-qr-url">{data.qrTarget.replace(/^https?:\/\//, '')}</span>
+            <span class="page-qr-hint">Scan or tap</span>
+          </span>
+        </a>
       </aside>
     {/if}
 
@@ -388,19 +416,132 @@
     transition: border-color 160ms ease, color 160ms ease;
   }
   .top-nav :global(a:hover) { color: var(--ink); border-bottom-color: var(--ink); }
-  .top-nav :global(a.qr) { border-bottom: none; display: inline-flex; align-items: center; gap: 0.5rem; }
-  .top-nav :global(a.qr:hover) { border-bottom: none; }
-  .top-nav :global(a.qr svg) {
-    width: 32px;
-    height: 32px;
-    display: block;
-    opacity: 0.85;
-    transition: opacity 160ms ease;
+
+  .perspectives {
+    grid-column: 2;
+    margin-top: 2.4rem;
+    max-width: 64ch;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
-  .top-nav :global(a.qr:hover svg) { opacity: 1; }
-  .top-nav :global(a.qr .qr-label) {
-    font-size: inherit;
-    letter-spacing: inherit;
+  .perspectives-head { margin-bottom: 0.4rem; }
+  .perspectives-kicker {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    color: var(--accent);
+  }
+  .perspectives-title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+    color: var(--ink);
+    margin: 0.3rem 0 0;
+    line-height: 1.1;
+  }
+  .perspective {
+    border: 1px solid var(--rule);
+    border-left-width: 3px;
+    background: rgba(20, 17, 13, 0.02);
+    padding: 0.9rem 1.2rem 1rem;
+  }
+  .perspective.current {
+    border-left-color: var(--ink);
+    background: rgba(20, 17, 13, 0.05);
+  }
+  .perspective-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.45rem;
+  }
+  .perspective-tag {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .perspective.current .perspective-tag { color: var(--ink); }
+  .perspective-full {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 0.86rem;
+    color: var(--muted);
+  }
+  .perspective-body {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+  .perspective-body :global(p) { margin: 0 0 0.7rem; }
+  .perspective-body :global(p:last-child) { margin-bottom: 0; }
+  .perspective-body :global(code) {
+    font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 0.88em;
+    background: rgba(20, 17, 13, 0.08);
+    padding: 0.05rem 0.3rem;
+    border-radius: 2px;
+  }
+
+  .page-qr {
+    grid-column: 2;
+    margin-top: 1.6rem;
+    max-width: 56ch;
+  }
+  .page-qr-link {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.1rem;
+    align-items: center;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--rule);
+    background: rgba(20, 17, 13, 0.02);
+    color: var(--ink);
+    transition: border-color 180ms ease, background 180ms ease;
+  }
+  .page-qr-link:hover {
+    border-color: var(--accent);
+    background: rgba(20, 17, 13, 0.04);
+  }
+  .page-qr-svg :global(svg) {
+    display: block;
+    width: 84px;
+    height: 84px;
+  }
+  .page-qr-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .page-qr-label {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+  }
+  .page-qr-url {
+    font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 0.78rem;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+  .page-qr-hint {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--muted);
   }
 
   .chapter-rail {
@@ -897,7 +1038,7 @@
       gap: 2.5vw;
       padding: 1.5vw 0;
     }
-    .number, .title, .gesture, .body-text, .source, .eli5, .ch-next, .steps, .edition-stripe, .tldr {
+    .number, .title, .gesture, .body-text, .source, .eli5, .ch-next, .steps, .edition-stripe, .tldr, .page-qr, .perspectives {
       grid-column: 1;
       max-width: none;
     }
