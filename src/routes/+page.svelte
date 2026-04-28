@@ -3,8 +3,10 @@
   import { base } from '$app/paths';
   import { flat, chapters } from '$lib/outline.js';
   import { createPager } from 'sveltekitbook/gestures';
-  import { TITLE, AUTHOR, COAUTHOR, YEAR } from '$lib/config.js';
+  import { TITLE, AUTHOR, COAUTHOR, YEAR, SOURCE_URL } from '$lib/config.js';
   import { track, TRACK_LABEL, TRACK_BLURB, TRACKS } from '$lib/track.svelte.js';
+
+  let { data } = $props();
 
   function romanize(n) {
     const r = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
@@ -86,7 +88,7 @@
 >
   <div class="meta top">
     <span>
-      {#if AUTHOR}{AUTHOR}{/if}{#if COAUTHOR} · co-author {COAUTHOR}{/if} · {YEAR}
+      {#if AUTHOR}<a class="author-link" href={SOURCE_URL} target="_blank" rel="noopener noreferrer" title="Original book by {AUTHOR}">{AUTHOR}</a>{/if}{#if COAUTHOR} · co-author {COAUTHOR}{/if} · {YEAR}
     </span>
   </div>
 
@@ -96,40 +98,25 @@
 
     <div class="tracks">
       {#each TRACKS as t (t)}
-        <button class="track-card" class:active={activeTrack === t} onclick={() => pickTrack(t)}>
-          <div class="track-tag">{TRACK_LABEL[t]}</div>
-          <h2 class="track-title">{TRACK_HEADING[t]}</h2>
-          <p class="track-blurb">{TRACK_BLURB[t]}</p>
-          <span class="track-cta">{TRACK_CTA[t]}</span>
-        </button>
+        <div class="track-card" class:active={activeTrack === t} data-track={t}>
+          <button class="track-card-pick" onclick={() => pickTrack(t)} title="Begin in {TRACK_LABEL[t]}">
+            <div class="track-tag">{TRACK_LABEL[t]}</div>
+            <h2 class="track-title">{TRACK_HEADING[t]}</h2>
+            <p class="track-blurb">{TRACK_BLURB[t]}</p>
+            <span class="track-cta">{TRACK_CTA[t]}</span>
+          </button>
+
+          {#if data.trackQr?.[t]}
+            <div class="track-qr">
+              <a class="track-qr-link" href={data.trackQr[t].url} title="Share {TRACK_LABEL[t]} permalink">
+                {@html data.trackQr[t].svg}
+              </a>
+              <span class="track-qr-hint">Scan to load this track on another device</span>
+            </div>
+          {/if}
+        </div>
       {/each}
     </div>
-
-    {#if perspectiveIndex.length}
-      <section class="perspectives-index" aria-label="Permalinks to chapter perspectives">
-        <header class="perspectives-index-head">
-          <span class="perspectives-index-kicker">Permalinks · perspectives</span>
-          <span class="perspectives-index-hint">A chapter-end reflection from each track. Right-click a tag to copy.</span>
-        </header>
-        <ul class="perspectives-index-list">
-          {#each perspectiveIndex as ch (ch.num)}
-            <li class="perspectives-index-row">
-              <span class="perspectives-index-chapter">
-                <span class="perspectives-index-num">Ch {romanize(ch.num)}</span>
-                <span class="perspectives-index-title">{ch.title}</span>
-              </span>
-              <span class="perspectives-index-links">
-                {#each ch.tracks as t (t)}
-                  <a class="perspectives-index-link" data-track={t} href="{base}/{ch.slug}#p-{t}">
-                    {TRACK_LABEL[t]}
-                  </a>
-                {/each}
-              </span>
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/if}
   </div>
 
   <div class="meta bottom">
@@ -215,27 +202,69 @@
   }
 
   .track-card {
-    text-align: left;
-    font-family: inherit;
     background: rgba(20, 17, 13, 0.03);
     border: 1px solid var(--rule);
     border-left-width: 3px;
-    padding: 1.2rem 1.4rem 1.4rem;
-    cursor: pointer;
     color: var(--ink);
-    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    transition: background 160ms ease, border-color 160ms ease;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
   }
   .track-card:hover {
     background: rgba(20, 17, 13, 0.06);
     border-color: var(--accent);
-    transform: translateY(-1px);
   }
   .track-card.active {
     border-left-color: var(--ink);
     background: rgba(20, 17, 13, 0.07);
+  }
+  .track-card[data-track='systems']  { border-left-color: #8a6a3a; }
+  .track-card[data-track='dynamic']  { border-left-color: #3a6a9a; }
+  .track-card[data-track='beginner'] { border-left-color: #4a7a4a; }
+
+  .track-card-pick {
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    padding: 1.2rem 1.4rem 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+  }
+  .track-card-pick:hover { background: rgba(20, 17, 13, 0.04); }
+
+  .track-qr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1rem 1.1rem;
+    border-top: 1px dotted var(--rule);
+    margin: auto 1rem 0;  /* auto top = pin to card bottom; aligns QRs across cards */
+  }
+  .track-qr-link {
+    display: block;
+    line-height: 0;
+  }
+  .track-qr-link :global(svg) {
+    display: block;
+    width: 116px;
+    height: 116px;
+    transition: opacity 160ms ease;
+  }
+  .track-qr-link:hover :global(svg) { opacity: 0.78; }
+  .track-qr-hint {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.4;
   }
 
   .track-tag {
@@ -283,101 +312,12 @@
     .tracks { grid-template-columns: 1fr; }
   }
 
-  .perspectives-index {
-    margin-top: 2.4rem;
-    border-top: 1px solid var(--rule);
-    padding-top: 1.6rem;
-    max-width: 1100px;
+  .author-link {
+    color: inherit;
+    border-bottom: 1px dotted currentColor;
+    transition: color 160ms ease, border-color 160ms ease;
   }
-  .perspectives-index-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-  }
-  .perspectives-index-kicker {
-    font-family: var(--sans);
-    font-size: 0.66rem;
-    text-transform: uppercase;
-    letter-spacing: 0.3em;
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .perspectives-index-hint {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-  .perspectives-index-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .perspectives-index-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1.5rem;
-    align-items: baseline;
-    padding: 0.55rem 0;
-    border-bottom: 1px dotted var(--rule);
-  }
-  .perspectives-index-row:last-child { border-bottom: none; }
-  .perspectives-index-chapter {
-    display: flex;
-    align-items: baseline;
-    gap: 0.7rem;
-    min-width: 0;
-  }
-  .perspectives-index-num {
-    font-family: var(--sans);
-    font-size: 0.62rem;
-    text-transform: uppercase;
-    letter-spacing: 0.28em;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .perspectives-index-title {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 1rem;
-    color: var(--ink);
-    overflow-wrap: anywhere;
-  }
-  .perspectives-index-links {
-    display: inline-flex;
-    gap: 0.4rem;
-  }
-  .perspectives-index-link {
-    font-family: var(--sans);
-    font-size: 0.62rem;
-    text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: var(--muted);
-    padding: 0.3rem 0.55rem;
-    border: 1px solid var(--rule);
-    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
-  }
-  .perspectives-index-link:hover {
-    color: var(--ink);
-    border-color: var(--ink);
-    background: rgba(20, 17, 13, 0.04);
-  }
-  .perspectives-index-link[data-track='systems']:hover { color: #8a6a3a; border-color: #8a6a3a; }
-  .perspectives-index-link[data-track='dynamic']:hover { color: #3a6a9a; border-color: #3a6a9a; }
-  .perspectives-index-link[data-track='beginner']:hover { color: #4a7a4a; border-color: #4a7a4a; }
-
-  @media (max-width: 600px) {
-    .perspectives-index-row {
-      grid-template-columns: 1fr;
-      gap: 0.4rem;
-    }
-    .perspectives-index-links { flex-wrap: wrap; }
-  }
+  .author-link:hover { color: var(--ink); border-bottom-color: var(--ink); }
 
   .hint {
     font-family: var(--sans);

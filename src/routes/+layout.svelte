@@ -10,6 +10,19 @@
     document.documentElement.dataset.track = track.current;
   });
 
+  // Honour `?track=<x>` from a shared link / scanned QR. Apply once on first
+  // mount, then strip the param so it doesn't pollute future URLs.
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const t = url.searchParams.get('track');
+    if (t === 'systems' || t === 'dynamic' || t === 'beginner') {
+      track.set(t);
+      url.searchParams.delete('track');
+      window.history.replaceState({}, '', url.toString());
+    }
+  });
+
   onNavigate((navigation) => {
     if (typeof document === 'undefined' || !document.startViewTransition) return;
 
