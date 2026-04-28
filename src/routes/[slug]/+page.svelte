@@ -280,13 +280,16 @@
     {/if}
 
     {#if data.qrSvg}
+      {@const perTrack = data.qrPerspective?.[activeTrack]}
+      {@const qrSvg = perTrack?.svg ?? data.qrSvg}
+      {@const qrUrl = perTrack?.url ?? data.qrTarget}
       <aside class="page-qr">
-        <a class="page-qr-link" href={data.qrTarget} target="_blank" rel="noopener noreferrer" title={data.qrTarget}>
-          <span class="page-qr-svg">{@html data.qrSvg}</span>
+        <a class="page-qr-link" href={qrUrl} title={qrUrl}>
+          <span class="page-qr-svg">{@html qrSvg}</span>
           <span class="page-qr-meta">
-            <span class="page-qr-label">Source</span>
-            <span class="page-qr-url">{data.qrTarget.replace(/^https?:\/\//, '')}</span>
-            <span class="page-qr-hint">Scan or tap</span>
+            <span class="page-qr-label">Permalink{perTrack ? ` · ${TRACK_LABEL[activeTrack]}` : ''}</span>
+            <span class="page-qr-url">{qrUrl.replace(/^https?:\/\//, '')}</span>
+            <span class="page-qr-hint">Scan or tap to share this view</span>
           </span>
         </a>
       </aside>

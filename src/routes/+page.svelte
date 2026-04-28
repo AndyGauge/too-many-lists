@@ -3,8 +3,30 @@
   import { base } from '$app/paths';
   import { flat, chapters } from '$lib/outline.js';
   import { createPager } from 'sveltekitbook/gestures';
-  import { TITLE, AUTHOR, YEAR } from '$lib/config.js';
+  import { TITLE, AUTHOR, COAUTHOR, YEAR } from '$lib/config.js';
   import { track, TRACK_LABEL, TRACK_BLURB, TRACKS } from '$lib/track.svelte.js';
+
+  function romanize(n) {
+    const r = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+               'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX'];
+    return r[n] || String(n);
+  }
+
+  // Last section of each chapter is where its perspectives live.
+  let perspectiveIndex = $derived(
+    chapters
+      .map((c) => {
+        const last = c.sections[c.sections.length - 1];
+        if (!last?.perspectives) return null;
+        return {
+          num: c.num,
+          title: c.title,
+          slug: last.num,
+          tracks: TRACKS.filter((t) => last.perspectives[t])
+        };
+      })
+      .filter(Boolean)
+  );
 
   const TRACK_HEADING = {
     systems: 'From C, C++, C#',
@@ -20,6 +42,13 @@
   let dragOffset = $state(0);
   let dragging = $derived(dragOffset !== 0);
   let activeTrack = $derived(track.current);
+
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'auto';
+    return () => { document.body.style.overflow = prev; };
+  });
 
   function start() {
     goto(base + '/' + flat[0].num);
@@ -56,7 +85,9 @@
   style:transform="translateX({dragOffset}px)"
 >
   <div class="meta top">
-    <span>{AUTHOR ? `${AUTHOR} · ` : ''}{YEAR}</span>
+    <span>
+      {#if AUTHOR}{AUTHOR}{/if}{#if COAUTHOR} · co-author {COAUTHOR}{/if} · {YEAR}
+    </span>
   </div>
 
   <div class="title-block">
@@ -73,6 +104,32 @@
         </button>
       {/each}
     </div>
+
+    {#if perspectiveIndex.length}
+      <section class="perspectives-index" aria-label="Permalinks to chapter perspectives">
+        <header class="perspectives-index-head">
+          <span class="perspectives-index-kicker">Permalinks · perspectives</span>
+          <span class="perspectives-index-hint">A chapter-end reflection from each track. Right-click a tag to copy.</span>
+        </header>
+        <ul class="perspectives-index-list">
+          {#each perspectiveIndex as ch (ch.num)}
+            <li class="perspectives-index-row">
+              <span class="perspectives-index-chapter">
+                <span class="perspectives-index-num">Ch {romanize(ch.num)}</span>
+                <span class="perspectives-index-title">{ch.title}</span>
+              </span>
+              <span class="perspectives-index-links">
+                {#each ch.tracks as t (t)}
+                  <a class="perspectives-index-link" data-track={t} href="{base}/{ch.slug}#p-{t}">
+                    {TRACK_LABEL[t]}
+                  </a>
+                {/each}
+              </span>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
   </div>
 
   <div class="meta bottom">
@@ -87,8 +144,8 @@
 <style>
   .cover {
     position: relative;
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 5vw 7vw;
     display: grid;
     grid-template-rows: auto 1fr auto;
@@ -224,6 +281,102 @@
 
   @media (max-width: 1000px) {
     .tracks { grid-template-columns: 1fr; }
+  }
+
+  .perspectives-index {
+    margin-top: 2.4rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 1.6rem;
+    max-width: 1100px;
+  }
+  .perspectives-index-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .perspectives-index-kicker {
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .perspectives-index-hint {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .perspectives-index-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .perspectives-index-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1.5rem;
+    align-items: baseline;
+    padding: 0.55rem 0;
+    border-bottom: 1px dotted var(--rule);
+  }
+  .perspectives-index-row:last-child { border-bottom: none; }
+  .perspectives-index-chapter {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    min-width: 0;
+  }
+  .perspectives-index-num {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .perspectives-index-title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  .perspectives-index-links {
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+  .perspectives-index-link {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--muted);
+    padding: 0.3rem 0.55rem;
+    border: 1px solid var(--rule);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  }
+  .perspectives-index-link:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+    background: rgba(20, 17, 13, 0.04);
+  }
+  .perspectives-index-link[data-track='systems']:hover { color: #8a6a3a; border-color: #8a6a3a; }
+  .perspectives-index-link[data-track='dynamic']:hover { color: #3a6a9a; border-color: #3a6a9a; }
+  .perspectives-index-link[data-track='beginner']:hover { color: #4a7a4a; border-color: #4a7a4a; }
+
+  @media (max-width: 600px) {
+    .perspectives-index-row {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+    .perspectives-index-links { flex-wrap: wrap; }
   }
 
   .hint {
