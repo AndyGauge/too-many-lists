@@ -12,11 +12,25 @@
       rel="stylesheet"
     />
     <script>
-      // Set data-track before paint so the track-driven palette applies on
-      // first frame instead of flashing the default bg.
+      // Apply track preference before first paint so:
+      //  - URL `?track=<t>` from a scanned QR / shared link wins, sticks to
+      //    localStorage, and is stripped from the address bar
+      //  - otherwise localStorage wins
+      //  - otherwise 'systems'
+      // Whichever wins, set data-track so the palette is correct on frame 1.
       try {
-        var t = localStorage.getItem('tml-track');
-        if (t !== 'systems' && t !== 'dynamic' && t !== 'beginner') t = 'systems';
+        var u = new URL(location.href);
+        var fromUrl = u.searchParams.get('track');
+        var t;
+        if (fromUrl === 'systems' || fromUrl === 'dynamic' || fromUrl === 'beginner') {
+          t = fromUrl;
+          localStorage.setItem('tml-track', t);
+          u.searchParams.delete('track');
+          history.replaceState({}, '', u.toString());
+        } else {
+          t = localStorage.getItem('tml-track');
+          if (t !== 'systems' && t !== 'dynamic' && t !== 'beginner') t = 'systems';
+        }
         document.documentElement.dataset.track = t;
       } catch (_) {
         document.documentElement.dataset.track = 'systems';

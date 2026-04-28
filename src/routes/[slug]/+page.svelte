@@ -279,17 +279,15 @@
       </aside>
     {/if}
 
-    {#if data.qrSvg}
-      {@const perTrack = data.qrPerspective?.[activeTrack]}
-      {@const qrSvg = perTrack?.svg ?? data.qrSvg}
-      {@const qrUrl = perTrack?.url ?? data.qrTarget}
+    {#if data.qr?.[activeTrack]}
+      {@const active = data.qr[activeTrack]}
       <aside class="page-qr">
-        <a class="page-qr-link" href={qrUrl} title={qrUrl}>
-          <span class="page-qr-svg">{@html qrSvg}</span>
+        <a class="page-qr-link" href={active.url} title={active.url}>
+          <span class="page-qr-svg">{@html active.svg}</span>
           <span class="page-qr-meta">
-            <span class="page-qr-label">Permalink{perTrack ? ` · ${TRACK_LABEL[activeTrack]}` : ''}</span>
-            <span class="page-qr-url">{qrUrl.replace(/^https?:\/\//, '')}</span>
-            <span class="page-qr-hint">Scan or tap to share this view</span>
+            <span class="page-qr-label">Permalink · {TRACK_LABEL[activeTrack]}{active.hasPerspective ? ' perspective' : ''}</span>
+            <span class="page-qr-url">{active.url.replace(/^https?:\/\//, '')}</span>
+            <span class="page-qr-hint">Scan or tap to share this view in this track</span>
           </span>
         </a>
       </aside>
