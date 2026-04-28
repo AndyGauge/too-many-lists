@@ -265,9 +265,11 @@
         </div>
         {#each TRACKS as t (t)}
           {#if section.perspectives[t]}
-            <article class="perspective" class:current={activeTrack === t}>
+            <article id="p-{t}" class="perspective" class:current={activeTrack === t}>
               <header class="perspective-head">
-                <span class="perspective-tag">{TRACK_LABEL[t]}</span>
+                <a class="perspective-tag" href="#p-{t}" title="Permalink to {TRACK_LABEL[t]} perspective">
+                  <span class="perspective-anchor" aria-hidden="true">#</span>{TRACK_LABEL[t]}
+                </a>
                 <span class="perspective-full">{TRACK_FULL[t]}</span>
               </header>
               <div class="perspective-body">{@html md(section.perspectives[t], mdOpts)}</div>
@@ -447,6 +449,13 @@
     border-left-width: 3px;
     background: rgba(20, 17, 13, 0.02);
     padding: 0.9rem 1.2rem 1rem;
+    scroll-margin-top: 2rem;
+  }
+  .perspective:target {
+    border-color: var(--accent);
+    border-left-color: var(--ink);
+    background: rgba(20, 17, 13, 0.07);
+    box-shadow: 0 0 0 2px rgba(20, 17, 13, 0.06);
   }
   .perspective.current {
     border-left-color: var(--ink);
@@ -466,7 +475,20 @@
     letter-spacing: 0.28em;
     color: var(--accent);
     font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.15rem;
+    transition: color 160ms ease;
   }
+  .perspective-anchor {
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity 160ms ease;
+    margin-right: 0.1rem;
+  }
+  .perspective-tag:hover { color: var(--ink); }
+  .perspective-tag:hover .perspective-anchor { opacity: 1; }
   .perspective.current .perspective-tag { color: var(--ink); }
   .perspective-full {
     font-family: var(--serif);
