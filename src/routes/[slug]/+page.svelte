@@ -19,6 +19,9 @@
   let resolvedBody = $derived(pickTrack(section.body, activeTrack));
   let resolvedTldr = $derived(pickTrack(section.tldr, activeTrack));
   let chapterHasPerspectives = $derived(chapter?.sections.some((s) => s.perspectives));
+
+  let menuOpen = $state(false);
+  function closeMenu() { menuOpen = false; }
   let nextSection = $derived(next(section.num));
   let prevSection = $derived(prev(section.num));
   let chapter = $derived(chapterOf(section.num));
@@ -108,7 +111,8 @@
 >
   <header class="top">
     <a class="mark vt-title" href="{base}/">{TITLE}</a>
-    <nav class="top-nav">
+
+    <nav class="top-nav top-nav-inline" aria-label="Reader controls">
       <div class="track-segment" role="radiogroup" aria-label="Reader track">
         {#each TRACKS as t (t)}
           <button
@@ -124,7 +128,45 @@
       </div>
       <a href="{base}/contents">Contents</a>
     </nav>
+
+    <button
+      type="button"
+      class="menu-toggle"
+      aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+      aria-expanded={menuOpen}
+      aria-controls="mobile-menu"
+      onclick={() => menuOpen = !menuOpen}
+    >
+      <span class="menu-bars" aria-hidden="true">{menuOpen ? '×' : '≡'}</span>
+    </button>
   </header>
+
+  {#if menuOpen}
+    <button type="button" class="menu-scrim" aria-label="Close menu" onclick={closeMenu}></button>
+    <nav id="mobile-menu" class="mobile-menu" aria-label="Reader controls">
+      <div class="mobile-menu-section">
+        <div class="mobile-menu-label">Reader track</div>
+        <div class="track-segment track-segment-stacked" role="radiogroup">
+          {#each TRACKS as t (t)}
+            <button
+              type="button"
+              class="track-seg"
+              class:active={activeTrack === t}
+              role="radio"
+              aria-checked={activeTrack === t}
+              title={TRACK_FULL[t]}
+              onclick={() => { track.set(t); closeMenu(); }}
+            >{TRACK_LABEL[t]}</button>
+          {/each}
+        </div>
+      </div>
+      <div class="mobile-menu-section">
+        <div class="mobile-menu-label">Navigate</div>
+        <a class="mobile-menu-link" href="{base}/contents" onclick={closeMenu}>Contents</a>
+        <a class="mobile-menu-link" href="{base}/" onclick={closeMenu}>Cover</a>
+      </div>
+    </nav>
+  {/if}
 
   {#if chapter}
     <div class="chapter-rail">
@@ -377,6 +419,7 @@
     text-transform: uppercase;
     letter-spacing: 0.24em;
     color: var(--muted);
+    gap: 1rem;
   }
 
   .mark {
@@ -387,6 +430,81 @@
     text-transform: none;
     color: var(--ink);
   }
+
+  .menu-toggle {
+    display: none;  /* desktop: hidden, mobile: shown via media query */
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink);
+    width: 2.4rem;
+    height: 2.4rem;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  .menu-toggle:hover { background: rgba(20, 17, 13, 0.05); border-color: var(--accent); }
+  .menu-bars { font-size: 1.4rem; line-height: 1; }
+
+  .menu-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 17, 13, 0.18);
+    backdrop-filter: blur(2px);
+    border: none;
+    z-index: 40;
+    cursor: pointer;
+  }
+
+  .mobile-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(86vw, 320px);
+    height: 100dvh;
+    background: var(--bg);
+    border-left: 1px solid var(--rule);
+    box-shadow: -8px 0 24px rgba(20, 17, 13, 0.08);
+    padding: 4.5rem 1.4rem 2rem;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+    overflow-y: auto;
+  }
+  .mobile-menu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .mobile-menu-label {
+    font-family: var(--sans);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .mobile-menu-link {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink);
+    padding: 0.5rem 0;
+    border-bottom: 1px dotted var(--rule);
+  }
+  .track-segment-stacked {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--rule);
+  }
+  .track-segment-stacked .track-seg {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    padding: 0.7rem 0.9rem;
+    text-align: left;
+  }
+  .track-segment-stacked .track-seg:last-child { border-bottom: none; }
 
   .top-nav { display: flex; gap: 0.9rem; align-items: center; }
   .track-segment {
@@ -1081,5 +1199,21 @@
     .ch-dots .dot { width: 1rem; }
     .chapter-meta { gap: 0.5rem; }
     .ch-title { font-size: 0.95rem; }
+
+    /* Title spans the full row; track switcher + Contents collapse into a
+     * hamburger that opens a side sheet. */
+    .top {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .mark {
+      flex: 1;
+      min-width: 0;
+      font-size: clamp(0.95rem, 4vw, 1.1rem);
+      line-height: 1.15;
+    }
+    .top-nav-inline { display: none; }
+    .menu-toggle { display: inline-flex; }
   }
 </style>
